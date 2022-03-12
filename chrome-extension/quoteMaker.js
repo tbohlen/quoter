@@ -1,24 +1,36 @@
-contextMenuCallback = function() {
+function contextMenuCallback() {
 	// does nothing at the moment
 }
 
-saveQuotation = function(info, tab) {
-	if(typeof(localStorage.qtrCount) == "undefined" || localStorage.qtrCount == null) {
-		localStorage.qtrCount = 0;
+function handleContextMenuClick(info, tab) {
+	if (info.menuItemId === "createQuotes") {
+		return saveQuotation(info, tab);
 	}
-	
-	if(info.selectionText && info.selectionText.length != 0) {
-		if(typeof(info.pageUrl) == "undefined" || info.pageUrl == null) {
-			info.pageURL = "";
+	return null;
+}
+
+function saveQuotation(info, tab) {
+	chrome.storage.sync.get(["quotes"], results => {
+		let quotes = results.quotes;
+		if (typeof(quotes) == "undefined" || quotes == null) {
+			quotes = [];
 		}
-		localStorage["qtr"+localStorage.qtrCount.toString()] = info.pageUrl.toString() + "//qtr//" + info.selectionText;
-		localStorage.qtrCount++;
-	}
+
+		if (info.selectionText && info.selectionText.length !== 0) {
+			if(typeof(info.pageUrl) == "undefined" || info.pageUrl == null) {
+				info.pageURL = "";
+			}
+			quotes.push(`${info.pageUrl.toString()}//qtr//${info.selectionText}`);
+			chrome.storage.sync.set({quotes});
+		}
+	});
 }
 
 var result = chrome.contextMenus.create({
-	"type":"normal"
-	, "title":"Save Quote"
-	, "contexts": ["selection"]
-	, "onclick": saveQuotation
+	id: "createQuotes",
+	type: "normal",
+	title: "Save Quote",
+	contexts: ["selection"]
 }, contextMenuCallback);
+
+chrome.contextMenus.onClicked.addListener(handleContextMenuClick)
